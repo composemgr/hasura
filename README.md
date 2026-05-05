@@ -45,7 +45,7 @@ See `docker-compose.yaml` for complete list of configurable options.
 
 ## 📂 Volumes
 
-- `./rootfs/data/hasura` - Data storage
+- `./volumes/data/hasura` - Data storage
 
 ## 🔍 Logging
 
