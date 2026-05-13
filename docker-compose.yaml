@@ -17,12 +17,40 @@ services:
     logging: *default-logging
     environment:
       TZ: ${TZ:-America/New_York}
+      HASURA_GRAPHQL_DATABASE_URL: postgresql://${DB_USER_NAME:-hasura}:${DB_USER_PASS:-changeme_db_password}@hasura-db:5432/${DB_CREATE_DATABASE_NAME:-hasura}
+      HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
+      HASURA_GRAPHQL_ADMIN_SECRET: ${APP_ADMIN_PASS:-changeme_admin_password}
+      HASURA_GRAPHQL_JWT_SECRET: '{"type":"HS256","key":"${APP_SECRET_KEY:-changeme_secret_key_min_32_chars}"}'
+      HASURA_GRAPHQL_METADATA_DATABASE_URL: postgresql://${DB_USER_NAME:-hasura}:${DB_USER_PASS:-changeme_db_password}@hasura-db:5432/${DB_CREATE_DATABASE_NAME:-hasura}
+      HASURA_GRAPHQL_ENABLE_TELEMETRY: "false"
     ports:
       - '172.17.0.1:8080:8080'
-    volumes:
-      - './volumes/data/hasura:/data'
+    depends_on:
+      hasura-db:
+        condition: service_healthy
     networks:
       - hasura
+
+  hasura-db:
+    image: postgres:latest
+    container_name: hasura-db
+    restart: always
+    pull_policy: always
+    logging: *default-logging
+    environment:
+      TZ: ${TZ:-America/New_York}
+      POSTGRES_DB: ${DB_CREATE_DATABASE_NAME:-hasura}
+      POSTGRES_USER: ${DB_USER_NAME:-hasura}
+      POSTGRES_PASSWORD: ${DB_USER_PASS:-changeme_db_password}
+    volumes:
+      - './volumes/data/db/postgres/hasura:/var/lib/postgresql/data'
+    networks:
+      - hasura
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER_NAME:-hasura} -d ${DB_CREATE_DATABASE_NAME:-hasura}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 networks:
   hasura:
