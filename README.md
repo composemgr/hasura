@@ -1,14 +1,21 @@
 ## 👋 Welcome to hasura 🚀
 
-Instant GraphQL APIs on your databases
+Instant realtime GraphQL APIs on your Postgres database
 
 ## 📋 Description
 
-Instant GraphQL APIs on your databases
+Hasura is an open source engine that gives you instant, realtime GraphQL APIs
+on your Postgres database. It also provides a web console for modelling,
+tracking, and querying data, plus authorization and file-upload extensions.
 
 ## 🚀 Services
 
 - **app**: hasura/graphql-engine:latest
+
+### Infrastructure Components
+
+- **hasura-db**: postgres:latest - Postgres database
+
 
 ## 📦 Installation
 
@@ -21,7 +28,8 @@ curl -q -LSsf "https://raw.githubusercontent.com/composemgr/hasura/main/docker-c
 ```bash
 git clone "https://github.com/composemgr/hasura" ~/.local/srv/docker/hasura
 cd ~/.local/srv/docker/hasura
-docker compose up -d
+cp default.env .env
+docker compose --env-file .env up -d
 ```
 
 ### Option 3: Using composemgr
@@ -35,41 +43,92 @@ composemgr install hasura
 
 ```shell
 TZ=America/New_York
+DB_CREATE_DATABASE_NAME=hasura
+DB_USER_NAME=hasura
+DB_USER_PASS=replace-with-a-random-password
+APP_ADMIN_PASS=replace-with-a-random-password
+APP_SECRET_KEY=replace-with-a-random-32-byte-hex-string
 ```
 
 See `docker-compose.yaml` for complete list of configurable options.
 
+### Environment Files
+
+`default.env.sample` holds the full set of variables and is copied to `.env`
+before starting the stack:
+
+```bash
+cp default.env .env
+docker compose --env-file .env up -d
+```
+
+`app.env.sample` holds the app-specific overrides and is copied to `app.env`:
+
+```bash
+cp app.env.sample app.env
+```
+
+`composemgr up` applies `app.env` and `default.env` automatically. Raw
+`docker compose` commands need `--env-file .env` to pick up the same values.
+
+### Reverse Proxy
+
+Three standalone compose files ship in this repo:
+
+| File | Use |
+|------|-----|
+| `docker-compose.yaml` | Default, published on `172.17.0.1:64195` |
+| `docker-compose.traefik.yaml` | Behind an existing external `traefik` network |
+| `docker-compose.tunnel.yaml` | Behind an existing external `cloudflare` tunnel network |
+
+```bash
+docker compose -f docker-compose.traefik.yaml --env-file .env up -d
+```
+
 ## 🌐 Access
 
-- **Web Interface**: http://172.17.0.1:8080
+- **Hasura Console**: http://172.17.0.1:64195
+- **GraphQL Endpoint**: http://172.17.0.1:64195/v1/graphql
+
+The console is gated by `APP_ADMIN_PASS`.
 
 ## 📂 Volumes
 
-- `./volumes/data/hasura` - Data storage
+- `./volumes/db/postgres/hasura` - Database and Hasura metadata data
+
+## 🔐 Security
+
+- Change all default passwords before deploying to production
+- The Hasura console is the primary attack surface — keep it behind
+  authentication and never publish it directly to the internet
+- Postgres is internal-only and never published to the host
+- Configure HTTPS using a reverse proxy (nginx, traefik, caddy)
+- Regularly update Docker images for security patches
+- Backup your database regularly
 
 ## 🔍 Logging
 
 ```shell
-docker compose logs -f app
+docker compose --env-file .env logs -f app
 ```
 
 ## 🛠️ Management
 
 ```bash
 # Start services
-docker compose up -d
+docker compose --env-file .env up -d
 
 # Stop services
-docker compose down
+docker compose --env-file .env down
 
 # Update to latest images
-docker compose pull && docker compose up -d
+docker compose --env-file .env pull && docker compose --env-file .env up -d
 
 # View logs
-docker compose logs -f
+docker compose --env-file .env logs -f
 
 # Restart services
-docker compose restart
+docker compose --env-file .env restart
 ```
 
 ## 📋 Requirements
